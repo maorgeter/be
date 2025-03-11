@@ -1,11 +1,6 @@
 from datetime import datetime
-import time
-import uuid
 from flask import Flask, render_template, request, jsonify
-from database import users_collection
-from bson import ObjectId
-from werkzeug.security import generate_password_hash
-
+from database import get_all_users, get_user_by_id, create_user, update_user, delete_user
 
 app = Flask(__name__)
 
@@ -18,9 +13,14 @@ def datetimeformat(value):
     except (ValueError, TypeError):
         return "Invalid Date"
 
+@app.route("/get_users", methods=["GET"])
+def get_users():
+    users = get_all_users()
+    return jsonify(users), 200
+
 @app.route("/")
 def index():
-    users = list(users_collection.find({}, {"_id": 0}))
+    users = get_all_users()
     return render_template("index.html", users=users)
 
 @app.route("/create_user", methods=["POST"])
@@ -29,45 +29,27 @@ def add_user():
     if not data.get("name") or not data.get("email") or not data.get("password"):
         return jsonify({"error": "Name, email, and password are required"}), 400
 
-    # Check if email already exists
-    existing_user = users_collection.find_one({"email": data["email"]})
-    if existing_user:
-        return jsonify({"error": "This email is already registered."}), 400
+    user = create_user(data["name"], data["email"], data["password"])
+    if "error" in user:
+        return jsonify(user), 400
 
-    user = {
-        "id": str(uuid.uuid4()),
-        "name": data["name"],
-        "email": data["email"],
-        "password": generate_password_hash(data["password"]),  # Hash the password
-        "created_at": time.time(), 
-    }
-    users_collection.insert_one(user)
     return jsonify({"id": user["id"], "message": "User created successfully"}), 201
 
 @app.route("/update_user/<user_id>", methods=["POST"])
-def update_user(user_id):
+def modify_user(user_id):
     data = request.json
+    if not data.get("name") or not data.get("email"):
+        return jsonify({"error": "Name and email are required"}), 400
 
-    result = users_collection.update_one(
-        {"id": user_id},
-        {
-            "$set": {
-                "name": data["name"],
-                "email": data["email"],
-                "updated_at": time.time()
-            }
-        }
-    )
-    if result.matched_count == 0:
-        return jsonify({"error": "User not found"}), 404
-    return jsonify({"message": "User updated successfully"})
+    if update_user(user_id, data["name"], data["email"]):
+        return jsonify({"message": "User updated successfully"}), 200
+    return jsonify({"error": "User not found"}), 404
 
 @app.route("/delete_user/<user_id>", methods=["DELETE"])
-def delete_user(user_id):
-    result = users_collection.delete_one({"id": user_id})
-    if result.deleted_count == 0:
-        return jsonify({"error": "User not found"}), 404
-    return jsonify({"message": "User deleted successfully"})
+def remove_user(user_id):
+    if delete_user(user_id):
+        return jsonify({"message": "User deleted successfully"}), 200
+    return jsonify({"error": "User not found"}), 404
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
