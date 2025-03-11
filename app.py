@@ -18,6 +18,7 @@ def get_users():
     users = get_all_users()
     return jsonify(users), 200
 
+# duplication of /get_users (for UI)
 @app.route("/")
 def index():
     users = get_all_users()
