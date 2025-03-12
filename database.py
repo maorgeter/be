@@ -1,7 +1,7 @@
 from pymongo import MongoClient
 import uuid
 import time
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # running on docker:
 MONGO_URI = "mongodb://mongo:27017"
@@ -44,3 +44,9 @@ def update_user(user_id, name, email):
 def delete_user(user_id):
     result = users_collection.delete_one({"id": user_id})
     return result.deleted_count > 0
+
+def get_user_by_email(email):
+    return users_collection.find_one({"email": email}, {"_id": 0})
+
+def check_password(password, hashed_password):
+    return check_password_hash(hashed_password, password)
