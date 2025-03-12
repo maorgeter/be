@@ -1,18 +1,21 @@
 from pymongo import MongoClient
+from pymongo.errors import DuplicateKeyError
 import uuid
 import time
 from werkzeug.security import generate_password_hash, check_password_hash
 
 # running on docker:
-MONGO_URI = "mongodb://mongo:27017"
+# MONGO_URI = "mongodb://mongo:27017"
 
 # running local:
-# MONGO_URI = "mongodb://localhost:27017"
+MONGO_URI = "mongodb://localhost:27017"
 DB_NAME = "be"
 
 client = MongoClient(MONGO_URI)
 db = client[DB_NAME]
 users_collection = db["users"]
+users_collection.create_index("email", unique=True)
+
 
 def get_all_users():
     return list(users_collection.find({}, {"_id": 0}))  # Excludes MongoDB _id
@@ -23,6 +26,8 @@ def get_user_by_id(user_id):
 def create_user(name, email, password):
     if users_collection.find_one({"email": email}):
         return {"error": "Email already exists"}
+    print("**********")
+    print(email)
 
     user = {
         "id": str(uuid.uuid4()),  # Unique UUID
@@ -32,14 +37,20 @@ def create_user(name, email, password):
         "created_at": time.time()
     }
     users_collection.insert_one(user)
+    user.pop("_id", None)
     return user
 
 def update_user(user_id, name, email):
-    result = users_collection.update_one(
-        {"id": user_id},
-        {"$set": {"name": name, "email": email, "updated_at": time.time()}}
-    )
-    return result.matched_count > 0
+    try:
+        result = users_collection.update_one(
+            {"id": user_id},
+            {"$set": {"name": name, "email": email}}
+        )
+        if result.matched_count == 0:
+            return {"error": "User not found"}
+        return {"message": "User updated successfully"}
+    except DuplicateKeyError:
+        return {"error": "Email already exists"}
 
 def delete_user(user_id):
     result = users_collection.delete_one({"id": user_id})
