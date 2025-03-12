@@ -1,4 +1,4 @@
-# **Maor Geter - User Management API** 
+# **Maor Geter - User Management API**
 
 ## **Overview**
 
@@ -24,7 +24,7 @@ This is a **Flask-based User Management Application** integrated with MongoDB, P
   * The `database.py` file contains two MongoDB URIs for different environments:
     * **Docker Running:** `mongodb://mongo:27017`
     * **Local Running:** `mongodb://localhost:27017`
-  * Please choose the correct **URI** .
+  * The application uses the correct  **URI based on the environment** .
 * **Test Environment**
   * The `test_app.py` file is designed to run  **only in a local environment** .
   * Tests authenticate using the **hardcoded admin credentials** and interact with a local MongoDB instance.
