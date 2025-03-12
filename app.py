@@ -2,11 +2,12 @@ from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 from database import get_all_users, get_user_by_id, create_user, update_user, delete_user
 from prometheus_flask_exporter import PrometheusMetrics
+from flasgger import Swagger 
 
 app = Flask(__name__)
 
-# Attach Prometheus monitoring to Flask
 metrics = PrometheusMetrics(app, path="/metrics")  # Force /metrics endpoint
+swagger = Swagger(app)
 
 get_users_counter = metrics.counter(
     'get_users_requests', 'Count of get users requests'
@@ -45,6 +46,13 @@ def datetimeformat(value):
 @app.route("/get_users", methods=["GET"])
 @get_users_counter
 def get_users():
+    """
+    Get all users
+    ---
+    responses:
+      200:
+        description: A list of users
+    """
     users = get_all_users()
     return jsonify(users), 200
 
@@ -58,6 +66,32 @@ def index():
 @user_creation_counter
 @request_latency
 def add_user():
+    """
+        Create a new user
+    ---
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - name
+            - email
+            - password
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            password:
+              type: string
+    responses:
+      201:
+        description: User created successfully
+      400:
+        description: Invalid input
+    """
     data = request.json
     if not data.get("name") or not data.get("email") or not data.get("password"):
         return jsonify({"error": "Name, email, and password are required"}), 400
@@ -72,6 +106,35 @@ def add_user():
 @user_update_counter
 @request_latency
 def modify_user(user_id):
+    """
+    Update an existing user
+    ---
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+    responses:
+      200:
+        description: User updated successfully
+      400:
+        description: Invalid input
+      404:
+        description: User not found
+    """
     data = request.json
     if not data.get("name") or not data.get("email"):
         return jsonify({"error": "Name and email are required"}), 400
@@ -84,6 +147,20 @@ def modify_user(user_id):
 @user_deletion_counter
 @request_latency
 def remove_user(user_id):
+    """
+    Delete a user
+    ---
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+    responses:
+      200:
+        description: User deleted successfully
+      404:
+        description: User not found
+    """
     if delete_user(user_id):
         return jsonify({"message": "User deleted successfully"}), 200
     return jsonify({"error": "User not found"}), 404
