@@ -41,13 +41,11 @@ document.getElementById("loginForm")?.addEventListener("submit", function (event
     .catch(() => showMessage("Failed to login!", "error"));
 });
 
-// 🔓 Logout Function
 function logout() {
     localStorage.removeItem("jwt_token");
     window.location.href = "/";
 }
 
-// 🛠 Handle User Actions (Only for Admin)
 document.getElementById("addUserForm")?.addEventListener("submit", function (event) {
     event.preventDefault();
 
@@ -141,7 +139,6 @@ function deleteUser(userId) {
     .catch(() => showMessage("Failed to delete user!", "error"));
 }
 
-// 🔔 Display Messages
 function showMessage(message, type) {
     let messageBox = document.getElementById("messageBox");
     messageBox.textContent = message;
@@ -159,7 +156,6 @@ function showMessage(message, type) {
     }, 3000);
 }
 
-// ✨ Highlight Updated Row
 function highlightRow(userId) {
     let row = document.querySelector(`tr[data-id='${userId}']`);
     row.style.backgroundColor = "#d4edda";

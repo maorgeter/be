@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
-from flask import Flask, render_template, request, jsonify, redirect, url_for
+from flask import Flask, render_template, request, jsonify
 from database import get_all_users, get_user_by_id, create_user, update_user, delete_user
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required
 from prometheus_flask_exporter import PrometheusMetrics
 from flasgger import Swagger
 
@@ -12,14 +12,29 @@ app.config["JWT_SECRET_KEY"] = "maorsmartech"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=1)
 jwt = JWTManager(app)
 
-metrics = PrometheusMetrics(app, path="/metrics")
-swagger = Swagger(app)
+swagger = Swagger(app, template={
+    "swagger": "2.0",
+    "info": {
+        "title": "User Management API",
+        "description": "API for managing users with JWT authentication.",
+        "version": "1.0.0"
+    },
+    "securityDefinitions": {
+        "Bearer": {
+            "type": "apiKey",
+            "name": "Authorization",
+            "in": "header",
+            "description": "Enter 'Bearer' followed by your JWT token"
+        }
+    },
+    "security": [{"Bearer": []}]
+})
 
+metrics = PrometheusMetrics(app, path="/metrics")
 get_users_counter = metrics.counter("get_users_requests", "Count of get users requests")
 user_creation_counter = metrics.counter("user_creation_requests", "Count of user creation requests")
 user_deletion_counter = metrics.counter("user_deletion_requests", "Count of user deletion requests")
 user_update_counter = metrics.counter("user_update_requests", "Count of user update requests")
-
 request_latency = metrics.histogram(
     "flask_request_latency_seconds", "Histogram for request latency",
     labels={"endpoint": lambda: request.path}
@@ -36,7 +51,7 @@ def datetimeformat(value):
         return datetime.utcfromtimestamp(int(value)).strftime('%Y-%m-%d %H:%M:%S')
     except (ValueError, TypeError):
         return "Invalid Date"
-
+    
 @app.route("/")
 def index():
     users = get_all_users()
@@ -44,30 +59,10 @@ def index():
 
 @app.route("/admin_login", methods=["GET", "POST"])
 def admin_login():
-    """
-    Admin Login
-    ---
-    parameters:
-      - name: body
-        in: body
-        required: true
-        schema:
-          type: object
-          properties:
-            email:
-              type: string
-            password:
-              type: string
-    responses:
-      200:
-        description: Login successful (Returns JWT token)
-      401:
-        description: Invalid credentials
-    """
     if request.method == "GET":
         return render_template("admin_login.html")  # Serve login page
 
-    # If POST request → process login
+    # Process POST login request
     data = request.json
     email = data.get("email")
     password = data.get("password")
@@ -83,6 +78,17 @@ def admin_login():
 @jwt_required()
 @get_users_counter
 def get_users():
+    """
+    Get all users
+    ---
+    security:
+      - Bearer: []
+    responses:
+      200:
+        description: A list of users
+      401:
+        description: Unauthorized
+    """
     return jsonify(get_all_users()), 200
 
 @app.route("/create_user", methods=["POST"])
@@ -90,6 +96,34 @@ def get_users():
 @user_creation_counter
 @request_latency
 def add_user():
+    """
+    Create a new user
+    ---
+    security:
+      - Bearer: []
+    parameters:
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - name
+            - email
+            - password
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+            password:
+              type: string
+    responses:
+      201:
+        description: User created successfully
+      400:
+        description: Invalid input
+    """
     data = request.json
     if not data.get("name") or not data.get("email") or not data.get("password"):
         return jsonify({"error": "Name, email, and password are required"}), 400
@@ -102,6 +136,37 @@ def add_user():
 @user_update_counter
 @request_latency
 def modify_user(user_id):
+    """
+    Update an existing user
+    ---
+    security:
+      - Bearer: []
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+      - name: body
+        in: body
+        required: true
+        schema:
+          type: object
+          required:
+            - name
+            - email
+          properties:
+            name:
+              type: string
+            email:
+              type: string
+    responses:
+      200:
+        description: User updated successfully
+      400:
+        description: Invalid input
+      404:
+        description: User not found
+    """
     data = request.json
     if not data.get("name") or not data.get("email"):
         return jsonify({"error": "Name and email are required"}), 400
@@ -115,6 +180,22 @@ def modify_user(user_id):
 @user_deletion_counter
 @request_latency
 def remove_user(user_id):
+    """
+    Delete a user
+    ---
+    security:
+      - Bearer: []
+    parameters:
+      - name: user_id
+        in: path
+        required: true
+        type: string
+    responses:
+      200:
+        description: User deleted successfully
+      404:
+        description: User not found
+    """
     if delete_user(user_id):
         return jsonify({"message": "User deleted successfully"}), 200
     return jsonify({"error": "User not found"}), 404
