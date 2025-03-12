@@ -31,14 +31,12 @@ swagger = Swagger(app, template={
 })
 
 metrics = PrometheusMetrics(app, path="/metrics")
-get_users_counter = metrics.counter("get_users_requests", "Count of get users requests")
-user_creation_counter = metrics.counter("user_creation_requests", "Count of user creation requests")
-user_deletion_counter = metrics.counter("user_deletion_requests", "Count of user deletion requests")
-user_update_counter = metrics.counter("user_update_requests", "Count of user update requests")
-request_latency = metrics.histogram(
-    "flask_request_latency_seconds", "Histogram for request latency",
-    labels={"endpoint": lambda: request.path}
-)
+get_users_counter = metrics.counter('get_users_requests', 'Count of get users requests')
+website_enter_counter = metrics.counter('website_enter_requests', 'Count of user enter UI')
+user_creation_counter = metrics.counter('user_creation_requests', 'Count of user creation requests')
+user_deletion_counter = metrics.counter('user_deletion_requests', 'Count of user deletion requests')
+user_update_counter = metrics.counter('user_update_requests', 'Count of user update requests')
+request_latency = metrics.histogram('flask_request_latency_seconds', 'Histogram for request latency', labels={'endpoint': lambda: request.path})
 
 # Hardcoded Admin Credentials
 ADMIN_CREDENTIALS = {"email": "maor@geter.com", "password": "smartech"}
@@ -53,6 +51,7 @@ def datetimeformat(value):
         return "Invalid Date"
     
 @app.route("/")
+@website_enter_counter
 def index():
     users = get_all_users()
     return render_template("index.html", users=users)
