@@ -42,7 +42,7 @@ function updateUser(userId) {
     }
 
     fetch(`/update_user/${userId}`, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email }),
     })

@@ -3,7 +3,11 @@ import uuid
 import time
 from werkzeug.security import generate_password_hash
 
-MONGO_URI = "mongodb://localhost:27017"
+# running on docker:
+MONGO_URI = "mongodb://mongo:27017"
+
+# running local:
+# MONGO_URI = "mongodb://localhost:27017"
 DB_NAME = "be"
 
 client = MongoClient(MONGO_URI)

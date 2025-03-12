@@ -1,0 +1,64 @@
+services:
+  flask:
+    build:
+      context: .
+      dockerfile: DockerfileFlask
+    container_name: flask_app
+    ports:
+      - "5001:5000"
+    depends_on:
+      - mongo
+      - prometheus
+      - grafana
+    environment:
+      MONGO_URI: mongodb://mongo:27017
+      DB_NAME: be
+    networks:
+      - monitoring
+
+  mongo:
+    image: mongo
+    container_name: mongo
+    ports:
+      - "27017:27017"
+    networks:
+      - monitoring
+    volumes:
+      - mongo_data:/data/db
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+    networks:
+      - monitoring
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: maor
+      GF_SECURITY_ADMIN_PASSWORD: smartech
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+
+volumes:
+  mongo_data: 
+  grafana_data:  
+
+networks:
+  monitoring:
+    driver: bridge
