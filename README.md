@@ -35,9 +35,9 @@ docker compose up --build -d
 
 ## Important links
 
-* **User Management UI** : http://localhost:5001
-* **Grafana Dashboard** : http://localhost:3000
-* **Swagger API Docs** : http://localhost:5000/apidocs
+* **User Management UI** : `http://localhost:5001`
+* **Grafana Dashboard** : `http://localhost:3000`
+* **Swagger API Docs** : `http://localhost:5000/apidocs`
 
 ## Important Configuration Details
 
