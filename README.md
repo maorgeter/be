@@ -36,7 +36,7 @@ docker compose up --build -d
 ## Important links
 
 * **User Management UI** : `http://localhost:5001`
-* * **User Management UI - Admin Login** : `http://localhost:5001/admin_login` - email: maor@geter.com - password: smartech
+* **User Management UI - Admin Login** : `http://localhost:5001/admin_login` - email: maor@geter.com - password: smartech
 * **Grafana Dashboard** : `http://localhost:3000`
 * **Swagger API Docs** : `http://localhost:5001/apidocs` - username: maor - password: smartech
 
